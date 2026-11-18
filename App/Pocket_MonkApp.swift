@@ -13,7 +13,7 @@ struct Pocket_MonkApp: App {
     var body: some Scene {
         WindowGroup {
             RootView()
-                .modelContainer(for: FriendRecord.self)
+                .modelContainer(for: [FriendRecord.self, DuelRecord.self])
         }
     }
 }

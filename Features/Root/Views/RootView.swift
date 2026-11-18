@@ -57,6 +57,8 @@ private struct RootTabView: View {
                             incomingInviteURL: incomingInviteURL,
                             onInviteHandled: { incomingInviteURL = nil }
                         )
+                    } else if tab == .duels {
+                        DuelsView(onFindFriends: { selectedTab = .friends })
                     } else {
                         FeaturePlaceholderView(tab: tab)
                     }
@@ -138,7 +140,7 @@ private struct AppFlowPlaceholderView: View {
 
 #Preview("Root tabs") {
     RootView(initialState: .ready)
-        .modelContainer(for: FriendRecord.self)
+        .modelContainer(for: [FriendRecord.self, DuelRecord.self])
 }
 
 #Preview("Onboarding shell") {
