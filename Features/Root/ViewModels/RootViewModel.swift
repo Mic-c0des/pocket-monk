@@ -9,6 +9,7 @@ final class RootViewModel: ObservableObject {
     @Published private(set) var permissionErrorMessage: String?
 
     private let authorizationService: any ScreenTimeAuthorizationServicing
+    private let analytics: any AnalyticsTracking
     private let persistOnboardingCompletion: @MainActor (Bool) -> Void
     private var hasCompletedOnboarding: Bool
     private let usesInjectedInitialState: Bool
@@ -16,6 +17,7 @@ final class RootViewModel: ObservableObject {
     init(
         initialState: AppFlowState? = nil,
         authorizationService: (any ScreenTimeAuthorizationServicing)? = nil,
+        analytics: any AnalyticsTracking = LocalAnalyticsTracker(),
         hasCompletedOnboarding: Bool? = nil,
         persistOnboardingCompletion: @escaping @MainActor (Bool) -> Void = {
             UserDefaults.standard.set($0, forKey: "hasCompletedPocketMonkOnboarding")
@@ -23,6 +25,7 @@ final class RootViewModel: ObservableObject {
     ) {
         let service = authorizationService ?? FamilyControlsAuthorizationService()
         self.authorizationService = service
+        self.analytics = analytics
         self.persistOnboardingCompletion = persistOnboardingCompletion
         self.hasCompletedOnboarding = hasCompletedOnboarding
             ?? UserDefaults.standard.bool(forKey: "hasCompletedPocketMonkOnboarding")
@@ -63,9 +66,11 @@ final class RootViewModel: ObservableObject {
 
         do {
             permissionStatus = try await authorizationService.requestAuthorization()
+            trackPermissionOutcome()
             routeAfterPermissionCheck()
         } catch {
             permissionStatus = authorizationService.currentStatus()
+            analytics.track(.screenTimePermissionRequestFailed)
             permissionErrorMessage = error.localizedDescription
             routeAfterPermissionCheck()
         }
@@ -99,5 +104,17 @@ final class RootViewModel: ObservableObject {
         guard !hasCompletedOnboarding else { return }
         hasCompletedOnboarding = true
         persistOnboardingCompletion(true)
+        analytics.track(.onboardingCompleted)
+    }
+
+    private func trackPermissionOutcome() {
+        switch permissionStatus {
+        case .approved:
+            analytics.track(.screenTimePermissionApproved)
+        case .denied:
+            analytics.track(.screenTimePermissionDenied)
+        case .notDetermined:
+            break
+        }
     }
 }

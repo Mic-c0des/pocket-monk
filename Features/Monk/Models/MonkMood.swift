@@ -24,21 +24,21 @@ enum MonkMood: String, CaseIterable, Codable, Sendable {
 
     var title: String {
         switch self {
-        case .superZen: "Super zen"
-        case .calm: "Calm"
-        case .neutral: "Finding balance"
-        case .agitated: "A little restless"
-        case .distressed: "Needs a breather"
+        case .superZen: String(localized: "Super zen")
+        case .calm: String(localized: "Calm")
+        case .neutral: String(localized: "Finding balance")
+        case .agitated: String(localized: "A little restless")
+        case .distressed: String(localized: "Needs a breather")
         }
     }
 
     var message: String {
         switch self {
-        case .superZen: "Your monk is feeling wonderfully balanced."
-        case .calm: "A gentler day is helping your monk settle in."
-        case .neutral: "Your monk is holding steady today."
-        case .agitated: "More screen time than usual is making your monk restless."
-        case .distressed: "Your monk could use a quieter moment away from the screen."
+        case .superZen: String(localized: "Your monk is feeling wonderfully balanced.")
+        case .calm: String(localized: "A gentler day is helping your monk settle in.")
+        case .neutral: String(localized: "Your monk is holding steady today.")
+        case .agitated: String(localized: "More screen time than usual is making your monk restless.")
+        case .distressed: String(localized: "Your monk could use a quieter moment away from the screen.")
         }
     }
 

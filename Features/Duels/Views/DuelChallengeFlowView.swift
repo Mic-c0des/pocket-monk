@@ -5,6 +5,7 @@ struct DuelChallengeFlowView: View {
     @Environment(\.colorScheme) private var colorScheme
 
     let friends: [FriendRecord]
+    let availablePoints: Int
     let onCreate: (String, DuelDurationOption, Date, Int) -> String?
 
     @State private var step: DuelChallengeStep = .opponent
@@ -18,11 +19,17 @@ struct DuelChallengeFlowView: View {
 
     init(
         friends: [FriendRecord],
+        availablePoints: Int,
         onCreate: @escaping (String, DuelDurationOption, Date, Int) -> String?
     ) {
         self.friends = friends
+        self.availablePoints = availablePoints
         self.onCreate = onCreate
         _selectedOpponentUsername = State(initialValue: friends.first?.username)
+        let initialStake = DuelStake.pointOptions.last {
+            $0 <= availablePoints
+        } ?? 0
+        _stakePoints = State(initialValue: initialStake)
     }
 
     var body: some View {
@@ -157,9 +164,12 @@ struct DuelChallengeFlowView: View {
             Text("Each side stakes the same number of virtual points.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
+            Text("Your local balance: \(availablePoints) points.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
 
             Picker("Virtual points per person", selection: $stakePoints) {
-                ForEach(DuelStake.pointOptions, id: \.self) { points in
+                ForEach(stakeOptions, id: \.self) { points in
                     Text(DuelStake.title(for: points) ?? "Unavailable")
                         .tag(points)
                 }
@@ -167,7 +177,7 @@ struct DuelChallengeFlowView: View {
             .pickerStyle(.inline)
 
             Label(
-                "Points have no monetary value. Results and point settlement come in a later phase.",
+                "Points have no monetary value. Each accepted stake is reserved; a winner gets the pot and a draw returns both stakes.",
                 systemImage: "info.circle"
             )
             .font(.caption)
@@ -201,6 +211,10 @@ struct DuelChallengeFlowView: View {
         friends.first { $0.username == selectedOpponentUsername }
     }
 
+    private var stakeOptions: [Int] {
+        DuelStake.pointOptions.filter { $0 <= availablePoints }
+    }
+
     private var durationSummary: String {
         guard selectedDuration == .custom else {
             return selectedDuration.title
@@ -219,9 +233,9 @@ struct DuelChallengeFlowView: View {
         case .duration:
             selectedDuration == .custom && customEndDate <= .now
         case .stake:
-            !DuelStake.pointOptions.contains(stakePoints)
+            !stakeOptions.contains(stakePoints)
         case .review:
-            selectedOpponent == nil || !DuelStake.pointOptions.contains(stakePoints)
+            selectedOpponent == nil || !stakeOptions.contains(stakePoints)
         }
     }
 
@@ -275,10 +289,10 @@ private enum DuelChallengeStep: Int, CaseIterable {
 
     var title: String {
         switch self {
-        case .opponent: "Choose opponent"
-        case .duration: "Challenge window"
-        case .stake: "Virtual stake"
-        case .review: "Review"
+        case .opponent: String(localized: "Choose opponent")
+        case .duration: String(localized: "Challenge window")
+        case .stake: String(localized: "Virtual stake")
+        case .review: String(localized: "Review")
         }
     }
 

@@ -24,20 +24,44 @@ struct FriendsView: View {
     }
 
     var body: some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: PocketMonkSpacing.large) {
-                introduction
-                demoNotice
-                feedbackMessage
-                addByUsernameCard
-                inviteCard
-                incomingRequestsCard
-                outgoingRequestsCard
-                friendsCard
+        Group {
+            if !viewModel.hasLoaded {
+                ProgressView("Loading your circle…")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .accessibilityLabel("Loading your friends")
+            } else if let message = viewModel.loadErrorMessage {
+                VStack(spacing: PocketMonkSpacing.medium) {
+                    Label("We couldn’t load your circle.", systemImage: "exclamationmark.triangle")
+                        .font(.headline)
+                        .foregroundStyle(PocketMonkColors.ember.color(for: colorScheme))
+                    Text(message)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                    Button("Try again", systemImage: "arrow.clockwise") {
+                        viewModel.load()
+                    }
+                    .buttonStyle(.bordered)
+                }
+                .padding(PocketMonkSpacing.large)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: PocketMonkSpacing.large) {
+                        introduction
+                        demoNotice
+                        feedbackMessage
+                        addByUsernameCard
+                        inviteCard
+                        incomingRequestsCard
+                        outgoingRequestsCard
+                        friendsCard
+                    }
+                    .padding(PocketMonkSpacing.large)
+                    .frame(maxWidth: 640, alignment: .leading)
+                    .frame(maxWidth: .infinity, alignment: .top)
+                }
             }
-            .padding(PocketMonkSpacing.large)
-            .frame(maxWidth: 640, alignment: .leading)
-            .frame(maxWidth: .infinity, alignment: .top)
         }
         .background(PocketMonkColors.canvas.color(for: colorScheme))
         .navigationTitle("Friends")

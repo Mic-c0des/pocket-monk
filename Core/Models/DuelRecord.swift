@@ -9,10 +9,10 @@ nonisolated enum DuelStatus: String, Codable, Hashable, Sendable {
 
     var title: String {
         switch self {
-        case .pending: "Waiting for response"
-        case .active: "In progress"
-        case .finished: "Time complete"
-        case .declined: "Declined"
+        case .pending: String(localized: "Waiting for response")
+        case .active: String(localized: "In progress")
+        case .finished: String(localized: "Time complete")
+        case .declined: String(localized: "Declined")
         }
     }
 
@@ -26,6 +26,28 @@ nonisolated enum DuelStatus: String, Codable, Hashable, Sendable {
     }
 }
 
+nonisolated enum DuelWinner: String, Codable, Hashable, Sendable {
+    case user
+    case opponent
+    case draw
+
+    var title: String {
+        switch self {
+        case .user: String(localized: "You win")
+        case .opponent: String(localized: "Your friend wins")
+        case .draw: String(localized: "It’s a draw")
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .user: "trophy.fill"
+        case .opponent: "figure.martial.arts"
+        case .draw: "equal.circle.fill"
+        }
+    }
+}
+
 nonisolated enum DuelDurationOption: String, CaseIterable, Codable, Hashable, Identifiable, Sendable {
     case oneDay
     case oneWeek
@@ -35,9 +57,9 @@ nonisolated enum DuelDurationOption: String, CaseIterable, Codable, Hashable, Id
 
     var title: String {
         switch self {
-        case .oneDay: "1 day"
-        case .oneWeek: "1 week"
-        case .custom: "Custom window"
+        case .oneDay: String(localized: "1 day")
+        case .oneWeek: String(localized: "1 week")
+        case .custom: String(localized: "Custom window")
         }
     }
 
@@ -55,7 +77,18 @@ nonisolated enum DuelStake {
 
     static func title(for points: Int) -> String? {
         guard pointOptions.contains(points) else { return nil }
-        return points == 0 ? "No stake" : "\(points) virtual points"
+        return points == 0
+            ? String(localized: "No stake")
+            : String(localized: "\(points) virtual points")
+    }
+}
+
+nonisolated enum DuelPointRules {
+    static let startingBalance = 100
+    static let playerAccountID = "local-player"
+
+    static func friendAccountID(for username: String) -> String {
+        "friend:\(username.lowercased())"
     }
 }
 
@@ -98,16 +131,44 @@ nonisolated enum DuelRules {
 
         let days = seconds / secondsPerDay
         if days > 0 {
-            return "Custom · \(days) \(days == 1 ? "day" : "days")"
+            return String(localized: "Custom · \(days) \(days == 1 ? "day" : "days")")
         }
 
         let hours = seconds / secondsPerHour
         if hours > 0 {
-            return "Custom · \(hours) \(hours == 1 ? "hour" : "hours")"
+            return String(localized: "Custom · \(hours) \(hours == 1 ? "hour" : "hours")")
         }
 
         let minutes = max(1, seconds / secondsPerMinute)
-        return "Custom · \(minutes) \(minutes == 1 ? "minute" : "minutes")"
+        return String(localized: "Custom · \(minutes) \(minutes == 1 ? "minute" : "minutes")")
+    }
+
+    static func winner(userChange: Int, opponentChange: Int) -> DuelWinner {
+        if userChange > opponentChange {
+            return .user
+        }
+        if opponentChange > userChange {
+            return .opponent
+        }
+        return .draw
+    }
+}
+
+nonisolated enum DemoDuelResultScore {
+    static let maximumChange = 10
+    private static let outcomeCount = maximumChange * 2 + 1
+
+    static func finalScore(
+        startingScore: Int,
+        opponentUsername: String,
+        duelID: UUID
+    ) -> Int {
+        let seed = "\(opponentUsername.lowercased())\(duelID.uuidString)"
+        let checksum = seed.utf8.reduce(0) {
+            ($0 * 31 + Int($1)) % outcomeCount
+        }
+        let change = checksum - maximumChange
+        return min(max(startingScore + change, 0), 100)
     }
 }
 
@@ -121,27 +182,39 @@ nonisolated enum DuelServiceError: LocalizedError, Equatable, Sendable {
     case missingZenScore
     case invalidZenScore
     case serviceNotReady
+    case insufficientVirtualPoints
+    case resultNotReady
+    case alreadyResolved
+    case missingStartScores
 
     var errorDescription: String? {
         switch self {
         case .opponentIsNotAFriend:
-            "Choose someone from your accepted friends list."
+            String(localized: "Choose someone from your accepted friends list.")
         case .duplicateChallenge:
-            "You already have a pending or active duel with this friend."
+            String(localized: "You already have a pending or active duel with this friend.")
         case .invalidDuration:
-            "Choose an end time after the duel starts."
+            String(localized: "Choose an end time after the duel starts.")
         case .invalidStake:
-            "Choose one of the available virtual point stakes."
+            String(localized: "Choose one of the available virtual point stakes.")
         case .challengeNotFound:
-            "This challenge is no longer available."
+            String(localized: "This challenge is no longer available.")
         case .invalidChallengeState:
-            "This challenge can’t make that state change."
+            String(localized: "This challenge can’t make that state change.")
         case .missingZenScore:
-            "Your zen score is unavailable. Try again after your dashboard loads."
+            String(localized: "Your zen score is unavailable. Try again after your dashboard loads.")
         case .invalidZenScore:
-            "The zen score must be between 0 and 100."
+            String(localized: "The zen score must be between 0 and 100.")
         case .serviceNotReady:
-            "The local duel store isn’t ready yet. Try again."
+            String(localized: "The local duel store isn’t ready yet. Try again.")
+        case .insufficientVirtualPoints:
+            String(localized: "One of the players doesn’t have enough virtual points for this stake.")
+        case .resultNotReady:
+            String(localized: "This duel must finish before its result can be resolved.")
+        case .alreadyResolved:
+            String(localized: "This duel’s result has already been resolved.")
+        case .missingStartScores:
+            String(localized: "The duel’s starting scores are unavailable, so its result can’t be resolved.")
         }
     }
 }
@@ -160,6 +233,11 @@ final class DuelRecord {
     var updatedAt: Date
     var userZenScoreAtStart: Int?
     var opponentZenScoreAtStart: Int?
+    var userZenScoreAtEnd: Int?
+    var opponentZenScoreAtEnd: Int?
+    var winner: DuelWinner?
+    var resolvedAt: Date?
+    var stakesReserved: Bool = false
 
     init(
         id: UUID = UUID(),
@@ -173,7 +251,12 @@ final class DuelRecord {
         endsAt: Date? = nil,
         updatedAt: Date? = nil,
         userZenScoreAtStart: Int? = nil,
-        opponentZenScoreAtStart: Int? = nil
+        opponentZenScoreAtStart: Int? = nil,
+        userZenScoreAtEnd: Int? = nil,
+        opponentZenScoreAtEnd: Int? = nil,
+        winner: DuelWinner? = nil,
+        resolvedAt: Date? = nil,
+        stakesReserved: Bool = false
     ) {
         self.id = id
         self.opponentUsername = opponentUsername
@@ -187,5 +270,37 @@ final class DuelRecord {
         self.updatedAt = updatedAt ?? createdAt
         self.userZenScoreAtStart = userZenScoreAtStart
         self.opponentZenScoreAtStart = opponentZenScoreAtStart
+        self.userZenScoreAtEnd = userZenScoreAtEnd
+        self.opponentZenScoreAtEnd = opponentZenScoreAtEnd
+        self.winner = winner
+        self.resolvedAt = resolvedAt
+        self.stakesReserved = stakesReserved
+    }
+
+    var userZenChange: Int? {
+        guard let userZenScoreAtStart, let userZenScoreAtEnd else { return nil }
+        return userZenScoreAtEnd - userZenScoreAtStart
+    }
+
+    var opponentZenChange: Int? {
+        guard let opponentZenScoreAtStart, let opponentZenScoreAtEnd else { return nil }
+        return opponentZenScoreAtEnd - opponentZenScoreAtStart
+    }
+}
+
+@Model
+final class DuelPointAccount {
+    @Attribute(.unique) var accountID: String
+    var balance: Int
+    var updatedAt: Date
+
+    init(
+        accountID: String,
+        balance: Int = DuelPointRules.startingBalance,
+        updatedAt: Date
+    ) {
+        self.accountID = accountID
+        self.balance = balance
+        self.updatedAt = updatedAt
     }
 }

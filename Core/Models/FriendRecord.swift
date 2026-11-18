@@ -9,10 +9,10 @@ nonisolated enum FriendRelationshipStatus: String, Codable, Sendable {
 
     var title: String {
         switch self {
-        case .pendingIncoming: "Incoming request"
-        case .pendingOutgoing: "Request sent"
-        case .friends: "Friend"
-        case .declined: "Declined"
+        case .pendingIncoming: String(localized: "Incoming request")
+        case .pendingOutgoing: String(localized: "Request sent")
+        case .friends: String(localized: "Friend")
+        case .declined: String(localized: "Declined")
         }
     }
 
@@ -80,21 +80,21 @@ nonisolated enum FriendServiceError: LocalizedError, Equatable, Sendable {
     var errorDescription: String? {
         switch self {
         case .invalidUsername:
-            "Enter a username with 3–20 letters, numbers, or underscores."
+            String(localized: "Enter a username with 3–20 letters, numbers, or underscores.")
         case .usernameNotFound:
-            "That username isn’t in the local demo directory."
+            String(localized: "That username isn’t in the local demo directory.")
         case .duplicateFriend:
-            "You already have an active request or friendship with this person."
+            String(localized: "You already have an active request or friendship with this person.")
         case .invalidInviteLink:
-            "This invite link isn’t valid. Check the link and try again."
+            String(localized: "This invite link isn’t valid. Check the link and try again.")
         case .expiredInviteLink:
-            "This invite link has expired. Ask for a new one."
+            String(localized: "This invite link has expired. Ask for a new one.")
         case .cannotAddYourself:
-            "You can’t add your own account."
+            String(localized: "You can’t add your own account.")
         case .incomingRequestNotFound:
-            "This incoming request is no longer available."
+            String(localized: "This incoming request is no longer available.")
         case .serviceNotReady:
-            "The local friends store isn’t ready yet. Try again."
+            String(localized: "The local friends store isn’t ready yet. Try again.")
         }
     }
 }

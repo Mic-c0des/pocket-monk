@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct LiveActivityCard: View {
+    @Environment(\.colorScheme) private var colorScheme
     @StateObject private var viewModel: LiveActivityViewModel
 
     let snapshot: DashboardSnapshot
@@ -38,7 +39,7 @@ struct LiveActivityCard: View {
                 if let errorMessage = viewModel.errorMessage {
                     Text(errorMessage)
                         .font(.caption)
-                        .foregroundStyle(.red)
+                        .foregroundStyle(PocketMonkColors.ember.color(for: colorScheme))
                         .accessibilityAddTraits(.updatesFrequently)
                 }
             }

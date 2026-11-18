@@ -10,10 +10,10 @@ enum AppTab: String, CaseIterable, Identifiable, Sendable {
 
     var title: String {
         switch self {
-        case .dashboard: "Home"
-        case .friends: "Friends"
-        case .duels: "Duels"
-        case .settings: "Settings"
+        case .dashboard: String(localized: "Home")
+        case .friends: String(localized: "Friends")
+        case .duels: String(localized: "Duels")
+        case .settings: String(localized: "Settings")
         }
     }
 
@@ -26,21 +26,30 @@ enum AppTab: String, CaseIterable, Identifiable, Sendable {
         }
     }
 
+    var analyticsEvent: AnalyticsEvent {
+        switch self {
+        case .dashboard: .homeViewed
+        case .friends: .friendsViewed
+        case .duels: .duelsViewed
+        case .settings: .settingsViewed
+        }
+    }
+
     var placeholderDescription: String {
         switch self {
-        case .dashboard: "Your monk and daily zen summary."
-        case .friends: "Add friends and keep each other accountable."
-        case .duels: "Create a friendly challenge and find your calm."
-        case .settings: "Your account and app preferences will appear here."
+        case .dashboard: String(localized: "Your monk and daily zen summary.")
+        case .friends: String(localized: "Add friends and keep each other accountable.")
+        case .duels: String(localized: "Create a friendly challenge and find your calm.")
+        case .settings: String(localized: "Your account and app preferences will appear here.")
         }
     }
 
     var sectionTitle: String {
         switch self {
-        case .dashboard: "Your practice"
-        case .friends: "Your circle"
-        case .duels: "Friendly challenges"
-        case .settings: "Pocket Monk"
+        case .dashboard: String(localized: "Your practice")
+        case .friends: String(localized: "Your circle")
+        case .duels: String(localized: "Friendly challenges")
+        case .settings: String(localized: "Pocket Monk")
         }
     }
 }

@@ -8,9 +8,14 @@ final class LiveActivityViewModel: ObservableObject {
     @Published private(set) var errorMessage: String?
 
     private let service: any MonkLiveActivityServicing
+    private let analytics: any AnalyticsTracking
 
-    init(service: any MonkLiveActivityServicing = MonkLiveActivityService()) {
+    init(
+        service: any MonkLiveActivityServicing = MonkLiveActivityService(),
+        analytics: any AnalyticsTracking = LocalAnalyticsTracker()
+    ) {
         self.service = service
+        self.analytics = analytics
         isAvailable = service.isAvailable
         isActive = service.isActive
     }
@@ -29,10 +34,13 @@ final class LiveActivityViewModel: ObservableObject {
 
         if isActive {
             await service.end()
+            analytics.track(.liveActivityEnded)
         } else {
             do {
                 try service.start(snapshot: snapshot)
+                analytics.track(.liveActivityStarted)
             } catch {
+                analytics.track(.liveActivityStartFailed)
                 errorMessage = error.localizedDescription
             }
         }

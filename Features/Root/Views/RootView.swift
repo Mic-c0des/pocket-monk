@@ -45,6 +45,7 @@ struct RootView: View {
 private struct RootTabView: View {
     @State private var selectedTab: AppTab = .dashboard
     @State private var incomingInviteURL: URL?
+    private let analytics = LocalAnalyticsTracker()
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -72,6 +73,9 @@ private struct RootTabView: View {
                 incomingInviteURL = url
                 selectedTab = .friends
             }
+        }
+        .onChange(of: selectedTab, initial: true) { _, tab in
+            analytics.track(tab.analyticsEvent)
         }
     }
 }
@@ -140,7 +144,7 @@ private struct AppFlowPlaceholderView: View {
 
 #Preview("Root tabs") {
     RootView(initialState: .ready)
-        .modelContainer(for: [FriendRecord.self, DuelRecord.self])
+        .modelContainer(for: [FriendRecord.self, DuelRecord.self, DuelPointAccount.self])
 }
 
 #Preview("Onboarding shell") {

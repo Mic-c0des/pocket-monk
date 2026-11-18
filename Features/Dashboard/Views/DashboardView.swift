@@ -172,9 +172,9 @@ private struct DailySummaryCard: View {
     private func durationLabel(_ minutes: Int) -> String {
         let hours = minutes / 60
         let remainingMinutes = minutes % 60
-        guard hours > 0 else { return "\(minutes) min" }
-        guard remainingMinutes > 0 else { return "\(hours) hr" }
-        return "\(hours) hr \(remainingMinutes) min"
+        guard hours > 0 else { return String(localized: "\(minutes) min") }
+        guard remainingMinutes > 0 else { return String(localized: "\(hours) hr") }
+        return String(localized: "\(hours) hr \(remainingMinutes) min")
     }
 }
 

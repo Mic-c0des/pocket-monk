@@ -8,11 +8,11 @@ struct ScreenTimePermissionView: View {
     private var actionTitle: String {
         switch viewModel.permissionStatus {
         case .notDetermined:
-            "Allow Screen Time access"
+            String(localized: "Allow Screen Time access")
         case .denied:
-            "Check access again"
+            String(localized: "Check access again")
         case .approved:
-            "Continue"
+            String(localized: "Continue")
         }
     }
 
@@ -69,20 +69,20 @@ struct ScreenTimePermissionView: View {
 
     private var permissionTitle: String {
         switch viewModel.permissionStatus {
-        case .notDetermined: "Screen Time access is not set up"
-        case .denied: "Screen Time access is off"
-        case .approved: "Screen Time access is on"
+        case .notDetermined: String(localized: "Screen Time access is not set up")
+        case .denied: String(localized: "Screen Time access is off")
+        case .approved: String(localized: "Screen Time access is on")
         }
     }
 
     private var permissionDetail: String {
         switch viewModel.permissionStatus {
         case .notDetermined:
-            "You can review and approve access in the iOS prompt."
+            String(localized: "You can review and approve access in the iOS prompt.")
         case .denied:
-            "Manage access in Settings, then return here to check again."
+            String(localized: "Manage access in Settings, then return here to check again.")
         case .approved:
-            "You’re ready to continue to Pocket Monk."
+            String(localized: "You’re ready to continue to Pocket Monk.")
         }
     }
 

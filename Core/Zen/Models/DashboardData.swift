@@ -24,11 +24,11 @@ struct DashboardSnapshot: Equatable, Sendable {
     var baselineComparisonMessage: String {
         switch differenceFromBaselineMinutes {
         case ..<0:
-            "\(abs(differenceFromBaselineMinutes)) min below your baseline"
+            String(localized: "\(abs(differenceFromBaselineMinutes)) min below your baseline")
         case 0:
-            "Right at your daily baseline"
+            String(localized: "Right at your daily baseline")
         default:
-            "\(differenceFromBaselineMinutes) min above your baseline"
+            String(localized: "\(differenceFromBaselineMinutes) min above your baseline")
         }
     }
 }

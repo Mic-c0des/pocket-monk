@@ -26,6 +26,6 @@ private enum SampleDashboardDataError: LocalizedError {
     case unavailable
 
     var errorDescription: String? {
-        "Sample screen-time history is unavailable."
+        String(localized: "Sample screen-time history is unavailable.")
     }
 }

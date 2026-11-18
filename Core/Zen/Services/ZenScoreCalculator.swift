@@ -27,9 +27,9 @@ enum ZenScoreError: LocalizedError, Equatable, Sendable {
     var errorDescription: String? {
         switch self {
         case .negativeScreenTime:
-            "Screen time cannot be negative."
+            String(localized: "Screen time cannot be negative.")
         case .invalidBaseline:
-            "A positive screen-time baseline is required."
+            String(localized: "A positive screen-time baseline is required.")
         }
     }
 }

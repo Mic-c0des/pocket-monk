@@ -7,7 +7,8 @@ struct DuelsView: View {
     @Environment(\.scenePhase) private var scenePhase
     @StateObject private var viewModel: DuelViewModel
     @StateObject private var dashboardViewModel: DashboardViewModel
-    @State private var isShowingChallengeFlow = false
+    @State private var presentation: DuelsPresentation?
+    @State private var resolvingDuelID: UUID?
 
     private let onFindFriends: () -> Void
 
@@ -26,23 +27,48 @@ struct DuelsView: View {
     }
 
     var body: some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: PocketMonkSpacing.large) {
-                introduction
-                demoNotice
-                feedbackMessage
-                if viewModel.friends.isEmpty {
-                    emptyFriendsCard
-                } else {
-                    createChallengeButton
+        Group {
+            if !viewModel.hasLoaded {
+                ProgressView("Loading your duels…")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .accessibilityLabel("Loading duels")
+            } else if let message = viewModel.loadErrorMessage {
+                VStack(spacing: PocketMonkSpacing.medium) {
+                    Label("We couldn’t load your duels.", systemImage: "exclamationmark.triangle")
+                        .font(.headline)
+                        .foregroundStyle(PocketMonkColors.ember.color(for: colorScheme))
+                    Text(message)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                    Button("Try again", systemImage: "arrow.clockwise") {
+                        viewModel.refresh()
+                    }
+                    .buttonStyle(.bordered)
                 }
-                pendingSection
-                activeSection
-                pastChallengesSection
+                .padding(PocketMonkSpacing.large)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: PocketMonkSpacing.large) {
+                        introduction
+                        demoNotice
+                        pointBalance
+                        feedbackMessage
+                        if viewModel.friends.isEmpty {
+                            emptyFriendsCard
+                        } else {
+                            createChallengeButton
+                        }
+                        pendingSection
+                        activeSection
+                        pastChallengesSection
+                    }
+                    .padding(PocketMonkSpacing.large)
+                    .frame(maxWidth: 640, alignment: .leading)
+                    .frame(maxWidth: .infinity, alignment: .top)
+                }
             }
-            .padding(PocketMonkSpacing.large)
-            .frame(maxWidth: 640, alignment: .leading)
-            .frame(maxWidth: .infinity, alignment: .top)
         }
         .background(PocketMonkColors.canvas.color(for: colorScheme))
         .navigationTitle("Duels")
@@ -52,25 +78,34 @@ struct DuelsView: View {
             viewModel.load(using: modelContext)
             await dashboardViewModel.loadDashboard()
         }
-        .sheet(isPresented: $isShowingChallengeFlow) {
-            NavigationStack {
-                DuelChallengeFlowView(friends: viewModel.friends) {
-                    opponentUsername,
-                    duration,
-                    customEndDate,
-                    stakePoints in
-                    guard viewModel.createDuel(
-                        opponentUsername: opponentUsername,
-                        duration: duration,
-                        customEndDate: customEndDate,
-                        stakePoints: stakePoints
-                    ) else {
-                        return viewModel.errorMessage ?? "The challenge couldn’t be created."
+        .sheet(item: $presentation) { presentation in
+            switch presentation {
+            case .challenge:
+                NavigationStack {
+                    DuelChallengeFlowView(
+                        friends: viewModel.friends,
+                        availablePoints: viewModel.pointBalance ?? 0
+                    ) {
+                        opponentUsername,
+                        duration,
+                        customEndDate,
+                        stakePoints in
+                        guard viewModel.createDuel(
+                            opponentUsername: opponentUsername,
+                            duration: duration,
+                            customEndDate: customEndDate,
+                            stakePoints: stakePoints
+                        ) else {
+                            return viewModel.errorMessage ?? "The challenge couldn’t be created."
+                        }
+                        return nil
                     }
-                    return nil
                 }
+                .presentationDetents([.large])
+            case let .result(duel):
+                DuelResultView(duel: duel, pointBalance: viewModel.pointBalance)
+                    .presentationDetents([.large])
             }
-            .presentationDetents([.large])
         }
     }
 
@@ -98,6 +133,24 @@ struct DuelsView: View {
         )
         .font(.subheadline)
         .foregroundStyle(PocketMonkColors.plum.color(for: colorScheme))
+    }
+
+    @ViewBuilder
+    private var pointBalance: some View {
+        if let pointBalance = viewModel.pointBalance {
+            Label(
+                "Your demo balance: \(pointBalance) virtual points",
+                systemImage: "sparkles"
+            )
+            .font(.subheadline.weight(.medium))
+            .foregroundStyle(PocketMonkColors.plum.color(for: colorScheme))
+            .accessibilityLabel("Your demo balance")
+            .accessibilityValue("\(pointBalance) virtual points")
+        } else {
+            Label("Virtual point balance unavailable", systemImage: "exclamationmark.triangle")
+                .font(.subheadline)
+                .foregroundStyle(PocketMonkColors.ember.color(for: colorScheme))
+        }
     }
 
     @ViewBuilder
@@ -133,11 +186,12 @@ struct DuelsView: View {
 
     private var createChallengeButton: some View {
         Button("Create a duel", systemImage: "figure.martial.arts") {
-            isShowingChallengeFlow = true
+            presentation = .challenge
         }
         .buttonStyle(.borderedProminent)
         .tint(PocketMonkColors.plum.light.color)
         .frame(maxWidth: .infinity, minHeight: 48)
+        .disabled(viewModel.pointBalance == nil)
     }
 
     private var pendingSection: some View {
@@ -180,12 +234,14 @@ struct DuelsView: View {
     }
 
     private var pastChallengesSection: some View {
-        let pastDuels = viewModel.finishedDuels + viewModel.declinedDuels
-        return Group {
-            if !pastDuels.isEmpty {
+        Group {
+            if !viewModel.finishedDuels.isEmpty || !viewModel.declinedDuels.isEmpty {
                 VStack(alignment: .leading, spacing: PocketMonkSpacing.medium) {
                     PocketMonkSectionLabel(title: "Past challenges")
-                    ForEach(pastDuels) { duel in
+                    ForEach(viewModel.finishedDuels) { duel in
+                        finishedDuelCard(duel)
+                    }
+                    ForEach(viewModel.declinedDuels) { duel in
                         PocketMonkCard {
                             PocketMonkListRow(
                                 title: "@\(duel.opponentUsername)",
@@ -204,6 +260,82 @@ struct DuelsView: View {
                     )
                 }
             }
+        }
+    }
+
+    @ViewBuilder
+    private func finishedDuelCard(_ duel: DuelRecord) -> some View {
+        if duel.winner != nil {
+            Button {
+                presentation = .result(duel)
+            } label: {
+                PocketMonkCard {
+                    PocketMonkListRow(
+                        title: duel.winner?.title ?? "Duel result",
+                        detail: "@\(duel.opponentUsername) · \(DuelStake.title(for: duel.stakePoints) ?? "Unknown stake")",
+                        systemImage: duel.winner?.systemImage ?? "checkmark.circle"
+                    )
+                }
+            }
+            .buttonStyle(.plain)
+        } else {
+            PocketMonkCard {
+                VStack(alignment: .leading, spacing: PocketMonkSpacing.medium) {
+                    PocketMonkListRow(
+                        title: "Ready to resolve",
+                        detail: "@\(duel.opponentUsername) · \(DuelStake.title(for: duel.stakePoints) ?? "Unknown stake")",
+                        systemImage: "checkmark.circle"
+                    )
+                    Button(
+                        resolvingDuelID == duel.id ? "Updating score…" : "Resolve result",
+                        systemImage: "trophy"
+                    ) {
+                        Task {
+                            await resolve(duel)
+                        }
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(PocketMonkColors.plum.light.color)
+                    .disabled(dashboardSnapshot == nil || resolvingDuelID == duel.id)
+                    if dashboardSnapshot == nil {
+                        Text("Your current zen score is needed to resolve this duel.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+        }
+    }
+
+    @MainActor
+    private func resolve(_ duel: DuelRecord) async {
+        resolvingDuelID = duel.id
+        await dashboardViewModel.loadDashboard()
+        defer { resolvingDuelID = nil }
+        guard viewModel.resolveDuel(
+            id: duel.id,
+            currentZenScore: dashboardSnapshot?.zenScore
+        ) else {
+            return
+        }
+        if let resolvedDuel = viewModel.finishedDuels.first(where: {
+            $0.id == duel.id
+        }) {
+            presentation = .result(resolvedDuel)
+        }
+    }
+}
+
+private enum DuelsPresentation: Identifiable {
+    case challenge
+    case result(DuelRecord)
+
+    var id: String {
+        switch self {
+        case .challenge:
+            "challenge"
+        case let .result(duel):
+            "result-\(duel.id.uuidString)"
         }
     }
 }
@@ -268,5 +400,5 @@ private struct PendingDuelCard: View {
     NavigationStack {
         DuelsView()
     }
-    .modelContainer(for: [FriendRecord.self, DuelRecord.self])
+    .modelContainer(for: [FriendRecord.self, DuelRecord.self, DuelPointAccount.self])
 }

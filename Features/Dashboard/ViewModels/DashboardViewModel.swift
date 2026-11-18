@@ -7,13 +7,16 @@ final class DashboardViewModel: ObservableObject {
 
     private let dataProvider: any DashboardDataProviding
     private let scoreCalculator: ZenScoreCalculator
+    private let analytics: any AnalyticsTracking
 
     init(
         dataProvider: any DashboardDataProviding = SampleDashboardDataService(),
-        scoreCalculator: ZenScoreCalculator = ZenScoreCalculator()
+        scoreCalculator: ZenScoreCalculator = ZenScoreCalculator(),
+        analytics: any AnalyticsTracking = LocalAnalyticsTracker()
     ) {
         self.dataProvider = dataProvider
         self.scoreCalculator = scoreCalculator
+        self.analytics = analytics
     }
 
     func loadDashboard() async {
@@ -52,6 +55,7 @@ final class DashboardViewModel: ObservableObject {
         } catch is CancellationError {
             return
         } catch {
+            analytics.track(.dashboardLoadFailed)
             state = .failed(error.localizedDescription)
         }
     }

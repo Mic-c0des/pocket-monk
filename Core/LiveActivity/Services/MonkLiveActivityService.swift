@@ -89,9 +89,9 @@ enum MonkLiveActivityError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .unavailable:
-            "Live Activities are turned off for Pocket Monk."
+            String(localized: "Live Activities are turned off for Pocket Monk.")
         case .alreadyActive:
-            "A monk Live Activity is already active."
+            String(localized: "A monk Live Activity is already active.")
         }
     }
 }
