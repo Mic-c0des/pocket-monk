@@ -48,9 +48,12 @@ private struct RootTabView: View {
         TabView(selection: $selectedTab) {
             ForEach(AppTab.allCases) { tab in
                 NavigationStack {
-                    if tab == .dashboard {
+                    switch tab {
+                    case .dashboard:
                         DashboardView()
-                    } else {
+                    case .friends:
+                        FriendsView()
+                    case .duels, .settings:
                         FeaturePlaceholderView(tab: tab)
                     }
                 }
