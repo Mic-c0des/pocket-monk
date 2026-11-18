@@ -1,8 +1,8 @@
 import ActivityKit
 import Foundation
 
-public struct MonkActivityAttributes: ActivityAttributes {
-    public struct ContentState: Codable, Hashable {
+nonisolated public struct MonkActivityAttributes: ActivityAttributes, Sendable {
+    nonisolated public struct ContentState: Codable, Hashable, Sendable {
         public let mood: String
         public let zenScore: Int
         public let updatedAt: Date

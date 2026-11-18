@@ -1,6 +1,6 @@
 import Foundation
 
-struct LiveActivityPresentation: Equatable {
+nonisolated struct LiveActivityPresentation: Equatable, Sendable {
     let title: String
     let detail: String
     let actionTitle: String?
