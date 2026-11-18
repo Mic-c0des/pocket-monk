@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 struct RootView: View {
     @Environment(\.scenePhase) private var scenePhase
@@ -43,6 +44,7 @@ struct RootView: View {
 
 private struct RootTabView: View {
     @State private var selectedTab: AppTab = .dashboard
+    @State private var incomingInviteURL: URL?
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -50,6 +52,11 @@ private struct RootTabView: View {
                 NavigationStack {
                     if tab == .dashboard {
                         DashboardView()
+                    } else if tab == .friends {
+                        FriendsView(
+                            incomingInviteURL: incomingInviteURL,
+                            onInviteHandled: { incomingInviteURL = nil }
+                        )
                     } else {
                         FeaturePlaceholderView(tab: tab)
                     }
@@ -58,6 +65,10 @@ private struct RootTabView: View {
                     Label(tab.title, systemImage: tab.systemImage)
                 }
                 .tag(tab)
+            }
+            .onOpenURL { url in
+                incomingInviteURL = url
+                selectedTab = .friends
             }
         }
     }
@@ -127,6 +138,7 @@ private struct AppFlowPlaceholderView: View {
 
 #Preview("Root tabs") {
     RootView(initialState: .ready)
+        .modelContainer(for: FriendRecord.self)
 }
 
 #Preview("Onboarding shell") {
