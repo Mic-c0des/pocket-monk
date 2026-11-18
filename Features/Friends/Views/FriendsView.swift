@@ -4,10 +4,14 @@ struct FriendsView: View {
     @StateObject private var viewModel: FriendsViewModel
     @State private var isShowingAddFriend = false
 
-    init(viewModel: FriendsViewModel? = nil) {
+    private let onChallenge: ((FriendProfile) -> Void)?
+
+    /// `onChallenge` adds a "Challenge to a duel" action to each friend when provided.
+    init(viewModel: FriendsViewModel? = nil, onChallenge: ((FriendProfile) -> Void)? = nil) {
         _viewModel = StateObject(
             wrappedValue: viewModel ?? FriendsViewModel()
         )
+        self.onChallenge = onChallenge
     }
 
     var body: some View {
@@ -18,7 +22,12 @@ struct FriendsView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .accessibilityLabel("Loading your friends")
             case let .loaded(graph):
-                FriendsContentView(viewModel: viewModel, graph: graph, addFriend: showAddFriend)
+                FriendsContentView(
+                    viewModel: viewModel,
+                    graph: graph,
+                    addFriend: showAddFriend,
+                    onChallenge: onChallenge
+                )
             case let .failed(message):
                 PocketMonkMessageView(
                     title: "We couldn’t load your friends",
@@ -79,6 +88,7 @@ private struct FriendsContentView: View {
 
     let graph: FriendGraph
     let addFriend: () -> Void
+    let onChallenge: ((FriendProfile) -> Void)?
 
     var body: some View {
         ScrollView {
@@ -173,6 +183,11 @@ private struct FriendsContentView: View {
                     ForEach(graph.friends) { friend in
                         FriendRow(friendship: friend) {
                             Menu {
+                                if let onChallenge {
+                                    Button("Challenge to a duel", systemImage: "figure.martial.arts") {
+                                        onChallenge(friend.profile)
+                                    }
+                                }
                                 Button("Remove friend", systemImage: "person.badge.minus", role: .destructive) {
                                     friendPendingRemoval = friend
                                 }

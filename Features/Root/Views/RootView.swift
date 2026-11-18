@@ -43,6 +43,9 @@ struct RootView: View {
 
 private struct RootTabView: View {
     @State private var selectedTab: AppTab = .dashboard
+    @State private var challengeRequest: FriendProfile?
+    // Shared so a friend added in the Friends tab can be challenged right away in Duels.
+    @State private var friendsService = LocalFriendsService()
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -52,8 +55,16 @@ private struct RootTabView: View {
                     case .dashboard:
                         DashboardView()
                     case .friends:
-                        FriendsView()
-                    case .duels, .settings:
+                        FriendsView(viewModel: FriendsViewModel(service: friendsService)) { friend in
+                            challengeRequest = friend
+                            selectedTab = .duels
+                        }
+                    case .duels:
+                        DuelsView(
+                            viewModel: DuelsViewModel(friendsService: friendsService),
+                            challengeRequest: $challengeRequest
+                        )
+                    case .settings:
                         FeaturePlaceholderView(tab: tab)
                     }
                 }

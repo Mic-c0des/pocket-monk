@@ -83,14 +83,7 @@ private struct MonkMoodCard: View {
     let snapshot: DashboardSnapshot
 
     private var moodColor: AdaptiveColorToken {
-        switch snapshot.mood {
-        case .superZen, .calm:
-            PocketMonkColors.jade
-        case .neutral:
-            PocketMonkColors.stone
-        case .agitated, .distressed:
-            PocketMonkColors.ember
-        }
+        snapshot.mood.colorToken
     }
 
     var body: some View {
